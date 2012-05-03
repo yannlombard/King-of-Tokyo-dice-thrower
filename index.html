@@ -1,0 +1,372 @@
+<!DOCTYPE HTML>
+<html lang="en-US" manifest="cache.manifest">
+<head>
+	<meta charset="UTF-8">
+	<link rel="apple-touch-startup-image" href="/kot/img/splash.png" />
+	<meta name="viewport" content="width=device-width, user-scalable=no" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+
+	<title>Dices</title>
+	<style type="text/css">
+		body {
+			margin:0;
+			font-family:Georgia;
+			font-size:20px;
+			background:#444;
+		}
+		#main {
+			width:100%;
+			margin:0 auto;
+		}
+		
+		.dices,
+		.actions {
+			margin:5px auto 0;
+			text-align:center;
+		}
+		
+		.dices {
+			padding-top:5px;
+			background:#666;
+		}
+		
+		.dices div,
+		.actions div {
+			display:inline-block;
+			vertical-align:top;
+			margin:0 5px 5px 0;
+			width:45px;
+			height:45px;
+			text-align:center;
+		}
+		
+		.dices div {
+			overflow:hidden;
+			display:inline-block;vertical-align:top;
+			background:url(king-tokyo.png) no-repeat;
+			background-size:381px 478px;
+			background-size:160px auto;
+			text-indent:-5em;
+			
+			-webkit-border-radius: 8px;
+			-moz-border-radius: 8px;
+			border-radius: 8px;
+		}
+		
+		.dices div.value0 {background-position:5px 3px;}
+		.dices div.value1 {background-position:-58px 4px;}
+		.dices div.value2 {background-position:-121px 3px;}
+		.dices div.value3 {background-position:4px -47px;}
+		.dices div.value4 {background-position:-57px -48px;}
+		.dices div.value5 {background-position:-119px -51px;}
+		
+		.dices div.supp.value0 {background-position:5px -103px;}
+		.dices div.supp.value1 {background-position:-58px -102px;}
+		.dices div.supp.value2 {background-position:-121px -103px;}
+		.dices div.supp.value3 {background-position:4px -154px;}
+		.dices div.supp.value4 {background-position:-57px -155px;}
+		.dices div.supp.value5 {background-position:-119px -158px;}
+		
+		.dices div.select {background-color:#EFE;color:#FFF;}
+		.actions div {
+			padding:10px 0;margin:0 0 5px;
+			width:50%;height:auto;
+			font-size:18px;
+			text-decoration:none;
+			text-align:center;
+			color:#EEE;background:#666;
+		}
+		.actions.block div {color:#000;}
+	</style>
+	<script type="text/javascript" src="modernizr.custom.71057.js"></script>
+</head>
+<body>
+	<div id="main"></div>
+	<script type="text/javascript" src="jquery-1.7.2.min.js"></script>
+	<script type="text/javascript">
+		(function($, w, d) {
+			
+			///////////////////////////////////////////////////////////////// DICE
+			function Dice(params) {
+				this.faces		= params.faces || 6;
+				this.value 		= params.value || -1;
+				this.id 		= params.id;
+				this.wrapper 	= params.wrapper || $('.dices');
+				this.select		= params.select || 'select';
+				this.keep		= params.keep || false;
+				this.supp		= params.supp || false;
+				this.c_style	= params.style || 'value';
+				this.c_dice		= params.c_dice || 'dice';
+				this.c_supp		= params.c_supp || 'supp';
+				
+				this.faces > 0 ? this.faces : 1;
+				
+				this.add();
+				this.throwMe();
+			}
+			
+			Dice.prototype.add = function() {
+				this.remove();
+				this.dice = $('<div id="'+this.c_dice+this.id+'"></div>');
+				this.wrapper.append(this.dice);
+				
+				this.catchClick();
+			};
+			
+			Dice.prototype.remove = function() {
+				this.wrapper.find('#dice'+this.id).unbind('click').remove();
+			};
+			
+			Dice.prototype.throwMe = function() {
+				if(!this.keep) {
+					this.value = Math.floor(Math.random() * 6);
+					this.render();
+				}
+				return this.value;
+			};
+			
+			Dice.prototype.catchClick = function() {
+				var self = this;
+
+				function handler(e) {
+					self.keep = self.keep ? false : true;
+					self.render();
+				}
+				
+				if (Modernizr.touch){
+					this.dice.bind("touchstart MozTouchDown", function(e) {
+						if(e.originalEvent.touches && e.originalEvent.touches.length) {
+							e = e.originalEvent.touches[0];
+						} else if(e.originalEvent.changedTouches && e.originalEvent.changedTouches.length) {
+							e = e.originalEvent.changedTouches[0];
+						}
+
+						// Handle mouse down
+						handler(e);
+					});
+				} else {
+					// bind to normal click, mousemove, etc
+					this.dice.click(handler);
+				}
+			};
+			
+			Dice.prototype.render = function() {
+				this.dice.text((this.value + 1));
+				this.dice.removeAttr('class');
+				this.dice.addClass(this.c_dice+this.id+' '+this.c_style+this.value);
+				if(this.supp) {
+					this.dice.addClass(this.c_supp);
+				}
+				
+				this.dice.removeClass(this.select);
+				!this.keep || this.dice.addClass(this.select);
+			};
+			/////////////////////////////////////////////////////////////////
+			
+			///////////////////////////////////////////////////////////////// DICES
+			function Dices (params) {
+				this.nb 		= params.nb || 6;
+				this.wrapper	= params.wrapper || 'dices';
+				this.actions	= params.actions || 'actions';
+				this.block		= params.block || 'block';
+				this.duration	= params.duration || 1000;
+				this.dices		= [];
+				this.waiting	= false;
+				
+				this.save = {
+					nb: this.nb
+				};
+				
+				this.$wrapper 	= $('<div class="'+this.wrapper+'"></div>');
+				this.$throw		= $('<div id="throw">Lancer</div>');
+				this.$add		= $('<div id="add">Ajouter un d&eacute;</div>');
+				this.$remove	= $('<div id="remove">Supprimer un d&eacute;</div>');
+				this.$reset		= $('<div id="reset">Tout relancer</div>');
+				this.$actions	= $('<div class="'+this.actions+'"></div>');
+				
+				this.gen();
+				this.init();
+			}
+			
+			Dices.prototype.gen = function() {
+				this.remove();
+				$('#main').append(this.$wrapper);
+				$('#main').append(this.$actions);
+				this.$actions.append(this.$remove);
+				this.$actions.append(this.$add);
+				this.$actions.append(this.$reset);
+				this.$actions.append(this.$throw);
+				
+				this.catchEvents();
+			};
+			
+			Dices.prototype.catchEvents = function() {
+				var self = this;
+				
+				function normalizeE(e) {
+					if(e.originalEvent.touches && e.originalEvent.touches.length) {
+						e = e.originalEvent.touches[0];
+					} else if(e.originalEvent.changedTouches && e.originalEvent.changedTouches.length) {
+						e = e.originalEvent.changedTouches[0];
+					}
+					return e;
+				}
+				
+				function throwClick() {
+					if(!self.waiting) {
+						self.throws();
+						self.waitControl();
+					}
+				}
+				
+				function resetClick() {
+					if(!self.waiting) {
+						self.reset();
+						self.waitControl();
+					}
+				}
+				
+				function addClick() {
+					if(!self.waiting) {
+						self.addDice();
+					}
+				}
+				
+				function removeClick() {
+					if(!self.waiting) {
+						self.removeDice();
+					}
+				}
+				
+				if (Modernizr.touch){
+					this.$throw.bind("touchstart MozTouchDown", function(e) {
+						e = normalizeE(e);
+						// Handle mouse down
+						throwClick();
+					});
+					
+					this.$reset.bind("touchstart MozTouchDown", function(e) {
+						e = normalizeE(e);
+						// Handle mouse down
+						resetClick();
+					});
+					
+					this.$add.bind("touchstart MozTouchDown", function(e) {
+						e = normalizeE(e);
+						// Handle mouse down
+						addClick();
+					});
+					
+					this.$remove.bind("touchstart MozTouchDown", function(e) {
+						e = normalizeE(e);
+						// Handle mouse down
+						removeClick();
+					});
+				} else {
+					// bind to normal click, mousemove, etc
+					this.$throw.click(function(e) {
+						e.preventDefault();
+						throwClick();
+					});
+					
+					this.$reset.click(function(e) {
+						e.preventDefault();
+						resetClick();
+					});
+					
+					this.$add.click(function(e) {
+						e.preventDefault();
+						addClick();
+					});
+					
+					this.$remove.click(function(e) {
+						e.preventDefault();
+						removeClick();
+					});
+				}
+			};
+			
+			Dices.prototype.waitControl = function() {
+				var self = this;
+				this.waiting = true;
+				this.$actions.addClass(this.block);
+				
+				window.setTimeout(function() {
+					self.$actions.removeClass(self.block);
+					self.waiting = false;
+				}, this.duration);
+			};
+			
+			Dices.prototype.remove = function() {
+				$('#main').find('.'+this.wrapper).remove();
+				$('#main').find('.'+this.actions).remove();
+			};
+			
+			Dices.prototype.throws = function() {
+				for(var i = 0; i < this.dices.length; i++) {
+					this.dices[i].throwMe();
+				}
+			};
+			
+			Dices.prototype.reset = function() {
+				for(var i = 0; i < this.dices.length; i++) {
+					this.dices[i].keep = false;
+					this.dices[i].render();
+				}
+				this.throws();
+			};
+			
+			Dices.prototype.addDice = function() {
+				var isSupp = this.save.nb <= this.nb ? true : false;
+				
+				this.dices.push(new Dice({
+					id		: this.nb,
+					wrapper	: this.$wrapper,
+					supp	: isSupp
+				}));
+				
+				this.nb++;
+			};
+			
+			Dices.prototype.removeDice = function() {
+				this.dices[this.dices.length - 1].remove();
+				this.dices.pop();
+				this.nb = this.nb - 1;
+			};
+			
+			Dices.prototype.init = function() {
+				for(var i = 0; i < this.nb; i++) {
+					this.dices.push(new Dice({
+						id		: i,
+						wrapper	: this.$wrapper
+					}));
+				}
+			};
+			
+			var dices = new Dices({});
+			/////////////////////////////////////////////////////////////////
+			
+			
+			/*
+			$('#main');append('<div id="stats"></div>');
+			var tot = 10000;
+			var stats = [0, 0, 0, 0, 0, 0];
+			for(var i = 0; i < tot; i++) {
+				var val = dices[0].throwMe();
+				stats[val]++;
+			}
+			
+			var res = '';
+			var $stats = $('#stats');
+			$stats.empty();
+			for(var i = 0; i < stats.length; i++) {
+				var per = stats[i] / tot * 100;
+				var percent = '<div class="percent" style="width: '+per+'%">'+(i+1)+'</div>';
+				$stats.append(percent);
+			}*/
+			
+		})(jQuery, window, document);
+	</script>
+</body>
+</html>

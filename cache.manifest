@@ -1,0 +1,19 @@
+CACHE MANIFEST
+# 2010-06-18:v2
+
+# Explicitly cached 'master entries'.
+CACHE:
+./index.html
+./jquery-1.7.2.min.js
+./king-tokyo.png
+./modernizr.custom.71057.js
+./img/splash.png
+
+# Resources that require the user to be online.
+NETWORK:
+*
+
+# static.html will be served if main.py is inaccessible
+# offline.jpg will be served in place of all images in images/large/
+# offline.html will be served in place of all other .html files
+FALLBACK:
